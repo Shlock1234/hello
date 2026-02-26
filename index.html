@@ -1,0 +1,940 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NEON APOCALYPSE · ZOMBIE SHOOTER</title>
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Segoe UI', system-ui, -apple-system, 'Helvetica Neue', sans-serif; }
+        #info {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            background: rgba(20, 30, 40, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(0, 255, 255, 0.3);
+            border-radius: 18px;
+            padding: 16px 28px;
+            color: cyan;
+            font-weight: 500;
+            text-shadow: 0 0 12px cyan;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.4);
+            letter-spacing: 1px;
+            z-index: 20;
+            pointer-events: none;
+            border-right: 2px solid rgba(255, 0, 255, 0.5);
+        }
+        #info span { color: #ff66aa; font-weight: 700; margin: 0 8px; }
+        
+        /* Heart container - replaces health bar */
+        #hearts-container {
+            position: absolute;
+            bottom: 40px;
+            left: 40px;
+            background: rgba(20, 20, 30, 0.4);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 0, 128, 0.3);
+            border-radius: 30px;
+            padding: 15px 25px;
+            z-index: 20;
+            box-shadow: 0 0 20px rgba(255, 0, 100, 0.2);
+            display: flex;
+            gap: 8px;
+        }
+        
+        .heart {
+            font-size: 28px;
+            transition: all 0.2s ease;
+            filter: drop-shadow(0 0 8px #ff3366);
+        }
+        
+        .heart.filled {
+            color: #ff3366;
+            text-shadow: 0 0 15px #ff0066;
+        }
+        
+        .heart.empty {
+            color: #333333;
+            opacity: 0.3;
+            filter: drop-shadow(0 0 2px #660000);
+        }
+        
+        .low-health .heart.filled {
+            animation: heartPulse 0.5s infinite alternate;
+        }
+        
+        @keyframes heartPulse {
+            from { transform: scale(1); text-shadow: 0 0 15px #ff0066; }
+            to { transform: scale(1.2); text-shadow: 0 0 30px #ff00aa; }
+        }
+        
+        #ammo-container {
+            position: absolute;
+            bottom: 40px;
+            right: 40px;
+            background: rgba(20, 20, 40, 0.6);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(0, 255, 255, 0.5);
+            border-radius: 60px;
+            padding: 14px 34px;
+            color: cyan;
+            font-size: 32px;
+            font-weight: 800;
+            letter-spacing: 4px;
+            z-index: 20;
+            box-shadow: 0 0 30px rgba(0, 255, 200, 0.3);
+            border-right: 3px solid magenta;
+        }
+        #ammo-container small {
+            font-size: 16px;
+            color: #ff99cc;
+            margin-left: 12px;
+        }
+        #wave-info {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: rgba(40, 20, 50, 0.5);
+            backdrop-filter: blur(12px);
+            border: 1px solid magenta;
+            border-radius: 30px;
+            padding: 14px 30px;
+            color: #ff88ff;
+            font-size: 22px;
+            font-weight: 600;
+            z-index: 20;
+            box-shadow: 0 0 40px #ff00aa55;
+        }
+        #start-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(8, 6, 16, 0.8);
+            backdrop-filter: blur(24px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            color: white;
+            transition: opacity 0.5s;
+            border: 2px solid rgba(255, 0, 255, 0.3);
+            box-shadow: inset 0 0 150px rgba(255, 0, 100, 0.3);
+        }
+        #start-screen h1 {
+            font-size: 5rem;
+            margin-bottom: 10px;
+            background: linear-gradient(45deg, cyan, magenta);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 0 40px magenta;
+            letter-spacing: 6px;
+        }
+        #start-screen .glass-btn {
+            background: rgba(30, 40, 60, 0.4);
+            backdrop-filter: blur(10px);
+            border: 1.5px solid cyan;
+            color: cyan;
+            font-size: 2rem;
+            padding: 16px 64px;
+            margin: 20px;
+            border-radius: 80px;
+            cursor: pointer;
+            transition: 0.2s;
+            box-shadow: 0 0 30px cyan;
+        }
+        #start-screen .glass-btn:hover {
+            background: rgba(0, 255, 255, 0.2);
+            border-color: magenta;
+            color: white;
+            box-shadow: 0 0 60px magenta;
+        }
+        #highscore {
+            font-size: 1.8rem;
+            color: #ffcc00;
+            text-shadow: 0 0 20px orange;
+            margin-top: 30px;
+        }
+        #crosshair {
+            position: absolute;
+            top: 50%; left: 50%;
+            transform: translate(-50%, -50%);
+            width: 12px; height: 12px;
+            border: 2px solid rgba(0, 255, 255, 0.8);
+            border-radius: 50%;
+            box-shadow: 0 0 15px cyan;
+            pointer-events: none;
+            z-index: 15;
+        }
+        #controls-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: rgba(255,255,255,0.5);
+            font-size: 14px;
+            background: rgba(0,0,0,0.3);
+            padding: 8px 16px;
+            border-radius: 20px;
+            backdrop-filter: blur(4px);
+            z-index: 25;
+        }
+        #debug-info {
+            position: absolute;
+            top: 80px;
+            left: 20px;
+            color: #00ff00;
+            font-size: 14px;
+            background: rgba(0,0,0,0.7);
+            padding: 8px;
+            border-radius: 8px;
+            z-index: 30;
+            font-family: monospace;
+        }
+    </style>
+</head>
+<body>
+    <div id="crosshair"></div>
+    <div id="info">🧟 SCORE <span id="scoreDisplay">0</span>  ·  MULTI <span id="multiplierDisplay">1.0</span>x</div>
+    <div id="wave-info">🌊 WAVE <span id="waveDisplay">1</span></div>
+    
+    <!-- Hearts container instead of health bar -->
+    <div id="hearts-container" class="">
+        <!-- 15 hearts will be generated by JavaScript -->
+    </div>
+    
+    <div id="ammo-container">🔫 <span id="ammoCurrent">30</span>/<span id="ammoMax">30</span> <small>R</small></div>
+    <div id="controls-hint">↑ ↓ ← → MOVE | MOUSE AIM | CLICK SHOOT | R RELOAD</div>
+    <div id="debug-info">🧟 ZOMBIES: <span id="zombieCount">0</span>/7 | 💙 BLUE = ALREADY HIT YOU</div>
+
+    <div id="start-screen">
+        <h1>NEON ZOMBIE NIGHT</h1>
+        <div class="glass-btn" id="startBtn">▶ START GAME</div>
+        <div id="highscore">🏆 HIGH SCORE : <span id="highScoreVal">0</span></div>
+    </div>
+
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.128.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.128.0/examples/jsm/"
+            }
+        }
+    </script>
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        // --- setup scene, camera, renderer ---
+        const scene = new THREE.Scene();
+        scene.background = new THREE.Color(0x0a0a1a);
+        scene.fog = new THREE.FogExp2(0x0a0a1a, 0.02);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.set(0, 1.8, 5);
+
+        const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.shadowMap.enabled = true;
+        renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        renderer.setPixelRatio(window.devicePixelRatio);
+        document.body.appendChild(renderer.domElement);
+
+        // --- lights ---
+        const ambient = new THREE.AmbientLight(0x404060);
+        scene.add(ambient);
+
+        const dirLight = new THREE.DirectionalLight(0xffccff, 0.8);
+        dirLight.position.set(5, 10, 7);
+        dirLight.castShadow = true;
+        dirLight.receiveShadow = true;
+        dirLight.shadow.mapSize.width = 1024;
+        dirLight.shadow.mapSize.height = 1024;
+        scene.add(dirLight);
+
+        // flickering neon street lights
+        const pointLight1 = new THREE.PointLight(0xff00aa, 1, 20);
+        pointLight1.position.set(0, 5, 0);
+        scene.add(pointLight1);
+
+        const pointLight2 = new THREE.PointLight(0x00ffff, 0.8, 25);
+        pointLight2.position.set(12, 4, -8);
+        scene.add(pointLight2);
+
+        const pointLight3 = new THREE.PointLight(0xff3366, 1.2, 22);
+        pointLight3.position.set(-10, 4, 5);
+        scene.add(pointLight3);
+
+        // flicker effect
+        setInterval(() => {
+            pointLight1.intensity = 0.7 + Math.random() * 0.6;
+            pointLight2.intensity = 0.5 + Math.random() * 0.5;
+            pointLight3.intensity = 0.8 + Math.random() * 0.7;
+        }, 200);
+
+        // --- environment: modular city blocks ---
+        // ground
+        const groundGeo = new THREE.CircleGeometry(60, 32);
+        const groundMat = new THREE.MeshStandardMaterial({ color: 0x1a1a2e, roughness: 0.7, metalness: 0.1, emissive: 0x050510 });
+        const ground = new THREE.Mesh(groundGeo, groundMat);
+        ground.rotation.x = -Math.PI/2;
+        ground.position.y = 0;
+        ground.receiveShadow = true;
+        scene.add(ground);
+
+        // street lines
+        for (let i = -25; i <= 25; i+=5) {
+            const lineMat = new THREE.MeshStandardMaterial({ color: 0x33ccff, emissive: 0x114488 });
+            const line = new THREE.Mesh(new THREE.PlaneGeometry(0.8, 0.2), lineMat);
+            line.rotation.x = -Math.PI/2;
+            line.position.set(i, 0.01, 0);
+            line.receiveShadow = true;
+            scene.add(line);
+        }
+
+        // buildings
+        const buildingPositions = [
+            [-15, -15], [15, -15], [-15, 15], [15, 15],
+            [-20, 0], [20, 0], [0, -20], [0, 20]
+        ];
+        buildingPositions.forEach(([x, z]) => {
+            const height = 3 + Math.random() * 4;
+            const geo = new THREE.BoxGeometry(4, height, 4);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x334466, emissive: 0x112233 });
+            const building = new THREE.Mesh(geo, mat);
+            building.position.set(x, height/2, z);
+            building.castShadow = true;
+            building.receiveShadow = true;
+            scene.add(building);
+            
+            // windows
+            const winMat = new THREE.MeshStandardMaterial({ color: 0xffaa00, emissive: 0x442200 });
+            for(let i = 0; i < 3; i++) {
+                const win = new THREE.Mesh(new THREE.BoxGeometry(0.5, 0.5, 0.1), winMat);
+                win.position.set(x + (i-1)*1.2, height*0.5, z + 2.1);
+                win.castShadow = true;
+                scene.add(win);
+            }
+        });
+
+        // abandoned cars
+        const carPositions = [[-4, 6], [8, -12], [-12, 15], [5, -5]];
+        carPositions.forEach(([x, z]) => {
+            const carGroup = new THREE.Group();
+            const body = new THREE.Mesh(new THREE.BoxGeometry(2, 0.8, 4), new THREE.MeshStandardMaterial({ color: 0x993366 }));
+            body.position.y = 0.4;
+            body.castShadow = true; body.receiveShadow = true;
+            carGroup.add(body);
+            const roof = new THREE.Mesh(new THREE.BoxGeometry(1.2, 0.6, 2), new THREE.MeshStandardMaterial({ color: 0x222222 }));
+            roof.position.y = 1.0;
+            roof.castShadow = true; roof.receiveShadow = true;
+            carGroup.add(roof);
+            carGroup.position.set(x, 0, z);
+            scene.add(carGroup);
+        });
+
+        // debris
+        for (let i = 0; i < 30; i++) {
+            const geo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
+            const mat = new THREE.MeshStandardMaterial({ color: 0x884466 });
+            const piece = new THREE.Mesh(geo, mat);
+            piece.position.set((Math.random()-0.5)*40, 0.15, (Math.random()-0.5)*40);
+            piece.castShadow = true;
+            piece.receiveShadow = true;
+            scene.add(piece);
+        }
+
+        // --- Player model with full limbs ---
+        function createPlayerModel() {
+            const group = new THREE.Group();
+            
+            // Body (torso)
+            const torsoGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.2);
+            const torsoMat = new THREE.MeshStandardMaterial({ color: 0x3366cc, emissive: 0x112244 });
+            const torso = new THREE.Mesh(torsoGeo, torsoMat);
+            torso.position.y = 0.6;
+            torso.castShadow = true; torso.receiveShadow = true;
+            group.add(torso);
+            
+            // Head
+            const headGeo = new THREE.SphereGeometry(0.25);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0xffccaa });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.4;
+            head.castShadow = true; head.receiveShadow = true;
+            group.add(head);
+            
+            // Arms
+            const armMat = new THREE.MeshStandardMaterial({ color: 0xffccaa });
+            
+            // Left arm
+            const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.8), armMat);
+            leftArm.position.set(-0.5, 1.0, 0);
+            leftArm.rotation.z = 0.2;
+            leftArm.rotation.x = 0.3;
+            leftArm.castShadow = true;
+            group.add(leftArm);
+            
+            // Right arm
+            const rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.8), armMat);
+            rightArm.position.set(0.5, 1.0, 0);
+            rightArm.rotation.z = -0.2;
+            rightArm.rotation.x = -0.3;
+            rightArm.castShadow = true;
+            group.add(rightArm);
+            
+            // Legs
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x3366cc });
+            
+            // Left leg
+            const leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.8), legMat);
+            leftLeg.position.set(-0.2, 0.1, 0);
+            leftLeg.castShadow = true;
+            group.add(leftLeg);
+            
+            // Right leg
+            const rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.8), legMat);
+            rightLeg.position.set(0.2, 0.1, 0);
+            rightLeg.castShadow = true;
+            group.add(rightLeg);
+            
+            // Weapon
+            const gunGeo = new THREE.BoxGeometry(0.2, 0.2, 0.8);
+            const gunMat = new THREE.MeshStandardMaterial({ color: 0xaaaaaa });
+            const gun = new THREE.Mesh(gunGeo, gunMat);
+            gun.position.set(0.5, 0.9, 0.4);
+            gun.rotation.x = 0.1;
+            gun.rotation.z = -0.1;
+            gun.castShadow = true;
+            group.add(gun);
+            
+            return group;
+        }
+
+        const playerModel = createPlayerModel();
+        playerModel.position.set(0, 0, 0);
+        scene.add(playerModel);
+
+        // --- Zombie creation with color change capability ---
+        const MAX_ZOMBIES = 7;
+        
+        function createZombie(x, z) {
+            // Don't spawn if we're at max capacity
+            if (zombies.length >= MAX_ZOMBIES) {
+                console.log("Max zombies reached, not spawning");
+                return null;
+            }
+            
+            const group = new THREE.Group();
+            
+            // Store materials for later color change
+            const materials = [];
+            
+            // Body (torso) - dark green
+            const torsoGeo = new THREE.CylinderGeometry(0.4, 0.4, 1.2);
+            const torsoMat = new THREE.MeshStandardMaterial({ color: 0x1a4d1a, emissive: 0x112211 });
+            const torso = new THREE.Mesh(torsoGeo, torsoMat);
+            torso.position.y = 0.6;
+            torso.castShadow = true; torso.receiveShadow = true;
+            group.add(torso);
+            materials.push(torsoMat);
+            
+            // Head - green
+            const headGeo = new THREE.SphereGeometry(0.25);
+            const headMat = new THREE.MeshStandardMaterial({ color: 0x2d862d, emissive: 0x1a331a });
+            const head = new THREE.Mesh(headGeo, headMat);
+            head.position.y = 1.4;
+            head.castShadow = true;
+            group.add(head);
+            materials.push(headMat);
+            
+            // Arms - green
+            const armMat = new THREE.MeshStandardMaterial({ color: 0x2d862d, emissive: 0x1a331a });
+            
+            // Left arm
+            const leftArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.8), armMat);
+            leftArm.position.set(-0.5, 1.0, 0);
+            leftArm.rotation.z = 0.2;
+            leftArm.rotation.x = 0.3;
+            leftArm.castShadow = true;
+            group.add(leftArm);
+            materials.push(armMat);
+            
+            // Right arm
+            const rightArm = new THREE.Mesh(new THREE.CylinderGeometry(0.12, 0.12, 0.8), armMat);
+            rightArm.position.set(0.5, 1.0, 0);
+            rightArm.rotation.z = -0.2;
+            rightArm.rotation.x = -0.3;
+            rightArm.castShadow = true;
+            group.add(rightArm);
+            materials.push(armMat);
+            
+            // Legs - green
+            const legMat = new THREE.MeshStandardMaterial({ color: 0x2d862d, emissive: 0x1a331a });
+            
+            // Left leg
+            const leftLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.8), legMat);
+            leftLeg.position.set(-0.2, 0.1, 0);
+            leftLeg.castShadow = true;
+            group.add(leftLeg);
+            materials.push(legMat);
+            
+            // Right leg
+            const rightLeg = new THREE.Mesh(new THREE.CylinderGeometry(0.15, 0.15, 0.8), legMat);
+            rightLeg.position.set(0.2, 0.1, 0);
+            rightLeg.castShadow = true;
+            group.add(rightLeg);
+            materials.push(legMat);
+            
+            // Hands/feet - brighter green
+            const extremityMat = new THREE.MeshStandardMaterial({ color: 0x3da83d, emissive: 0x224422 });
+            
+            // Left hand
+            const leftHand = new THREE.Mesh(new THREE.SphereGeometry(0.1), extremityMat);
+            leftHand.position.set(-0.65, 0.65, 0);
+            leftHand.castShadow = true;
+            group.add(leftHand);
+            materials.push(extremityMat);
+            
+            // Right hand
+            const rightHand = new THREE.Mesh(new THREE.SphereGeometry(0.1), extremityMat);
+            rightHand.position.set(0.65, 0.65, 0);
+            rightHand.castShadow = true;
+            group.add(rightHand);
+            materials.push(extremityMat);
+            
+            // Left foot
+            const leftFoot = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.3), extremityMat);
+            leftFoot.position.set(-0.25, 0.05, 0.1);
+            leftFoot.castShadow = true;
+            group.add(leftFoot);
+            materials.push(extremityMat);
+            
+            // Right foot
+            const rightFoot = new THREE.Mesh(new THREE.BoxGeometry(0.2, 0.1, 0.3), extremityMat);
+            rightFoot.position.set(0.25, 0.05, 0.1);
+            rightFoot.castShadow = true;
+            group.add(rightFoot);
+            materials.push(extremityMat);
+            
+            // Glow light
+            const light = new THREE.PointLight(0xff3366, 0.8, 5);
+            light.position.set(0, 0.8, 0);
+            group.add(light);
+            
+            group.position.set(x, 0, z);
+            
+            group.userData = { 
+                health: 100, 
+                speed: 0.04 + (Math.random() * 0.03),
+                walkOffset: Math.random() * Math.PI * 2,
+                hasDamaged: false, // Track if this zombie has already taken a heart
+                materials: materials // Store materials for color change
+            };
+            
+            scene.add(group);
+            return group;
+        }
+
+        // Function to turn zombie blue (after taking a heart)
+        function turnZombieBlue(zombie) {
+            if (!zombie || zombie.userData.hasDamaged) return;
+            
+            zombie.userData.hasDamaged = true;
+            
+            // Change all materials to blue
+            zombie.userData.materials.forEach(mat => {
+                mat.color.setHex(0x3366cc); // Blue color
+                mat.emissive.setHex(0x112244); // Dark blue emission
+            });
+            
+            // Change light color to blue
+            zombie.children.forEach(child => {
+                if (child instanceof THREE.PointLight) {
+                    child.color.setHex(0x3366ff);
+                }
+            });
+        }
+
+        // --- game state ---
+        let score = 0;
+        let multiplier = 1.0;
+        let currentWave = 1;
+        let hearts = 15; // 15 hearts instead of health bar
+        let ammo = 30;
+        let maxAmmo = 30;
+        let reloading = false;
+        let gameActive = false;
+        let highScore = localStorage.getItem('neonZombieHigh') || 0;
+        document.getElementById('highScoreVal').innerText = highScore;
+
+        // Zombies array
+        const zombies = [];
+
+        // movement state
+        const moveState = {
+            forward: false,
+            backward: false,
+            left: false,
+            right: false
+        };
+
+        const direction = new THREE.Vector3();
+        const boundary = 22;
+
+        // Hearts UI setup
+        const heartsContainer = document.getElementById('hearts-container');
+        
+        function updateHearts() {
+            // Clear container
+            heartsContainer.innerHTML = '';
+            
+            // Create 15 hearts
+            for (let i = 0; i < 15; i++) {
+                const heart = document.createElement('span');
+                heart.className = `heart ${i < hearts ? 'filled' : 'empty'}`;
+                heart.innerHTML = '❤️';
+                heartsContainer.appendChild(heart);
+            }
+            
+            // Add low health class if 5 or fewer hearts
+            if (hearts <= 5) {
+                heartsContainer.classList.add('low-health');
+            } else {
+                heartsContainer.classList.remove('low-health');
+            }
+        }
+        
+        // Initial hearts
+        updateHearts();
+
+        // UI elements
+        const scoreSpan = document.getElementById('scoreDisplay');
+        const multiSpan = document.getElementById('multiplierDisplay');
+        const waveSpan = document.getElementById('waveDisplay');
+        const ammoCurrentSpan = document.getElementById('ammoCurrent');
+        const ammoMaxSpan = document.getElementById('ammoMax');
+        const zombieCountSpan = document.getElementById('zombieCount');
+
+        function updateUI() {
+            scoreSpan.innerText = score;
+            multiSpan.innerText = multiplier.toFixed(1);
+            waveSpan.innerText = currentWave;
+            ammoCurrentSpan.innerText = ammo;
+            ammoMaxSpan.innerText = maxAmmo;
+            zombieCountSpan.innerText = zombies.length;
+            updateHearts(); // Update hearts display
+        }
+        updateUI();
+
+        // shooting
+        const raycaster = new THREE.Raycaster();
+        const shootDir = new THREE.Vector3();
+
+        function shoot() {
+            if (!gameActive || reloading || ammo <= 0) return;
+            ammo--;
+            
+            // screen shake
+            camera.position.z += 0.05;
+            setTimeout(() => camera.position.z -= 0.05, 50);
+            
+            // get camera direction
+            camera.getWorldDirection(shootDir);
+            raycaster.set(camera.position, shootDir);
+            
+            // Check all zombie parts
+            const allZombieParts = [];
+            zombies.forEach(zombie => {
+                zombie.children.forEach(child => {
+                    if (child.isMesh) allZombieParts.push(child);
+                });
+            });
+            
+            const hits = raycaster.intersectObjects(allZombieParts);
+            
+            if (hits.length) {
+                // Find the parent zombie group
+                let hitObject = hits[0].object;
+                while (hitObject.parent && !hitObject.userData.health) {
+                    hitObject = hitObject.parent;
+                }
+                
+                if (hitObject.userData && hitObject.userData.health) {
+                    hitObject.userData.health -= 50;
+                    
+                    // Flash red on hit
+                    hitObject.userData.materials.forEach(mat => {
+                        mat.emissive.setHex(0x440000);
+                        setTimeout(() => {
+                            if (mat && !hitObject.userData.hasDamaged) {
+                                mat.emissive.setHex(0x112211);
+                            } else if (mat && hitObject.userData.hasDamaged) {
+                                mat.emissive.setHex(0x112244);
+                            }
+                        }, 100);
+                    });
+                    
+                    if (hitObject.userData.health <= 0) {
+                        scene.remove(hitObject);
+                        const index = zombies.indexOf(hitObject);
+                        if (index > -1) zombies.splice(index, 1);
+                        score += 100 * multiplier;
+                        multiplier += 0.1;
+                        
+                        // particle effect
+                        const pos = hitObject.position.clone();
+                        const particles = new THREE.BufferGeometry();
+                        const positions = new Float32Array(12 * 3);
+                        for (let i = 0; i < 12; i++) {
+                            positions[i*3] = pos.x + (Math.random()-0.5) * 1.5;
+                            positions[i*3+1] = pos.y + 0.5 + (Math.random()-0.5) * 1.5;
+                            positions[i*3+2] = pos.z + (Math.random()-0.5) * 1.5;
+                        }
+                        particles.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+                        const particleSystem = new THREE.Points(particles, new THREE.PointsMaterial({ color: 0xff0066, size: 0.15 }));
+                        scene.add(particleSystem);
+                        setTimeout(() => scene.remove(particleSystem), 300);
+                    }
+                }
+            }
+            updateUI();
+        }
+
+        function reload() {
+            if (reloading) return;
+            reloading = true;
+            setTimeout(() => {
+                ammo = maxAmmo;
+                reloading = false;
+                updateUI();
+            }, 1000);
+        }
+
+        function spawnWave() {
+            console.log("Spawning wave", currentWave);
+            
+            // Calculate how many zombies to spawn
+            const targetCount = Math.min(currentWave * 2, MAX_ZOMBIES);
+            const currentCount = zombies.length;
+            const toSpawn = Math.max(0, targetCount - currentCount);
+            
+            for (let i = 0; i < toSpawn; i++) {
+                setTimeout(() => {
+                    if (!gameActive) return;
+                    
+                    if (zombies.length >= MAX_ZOMBIES) return;
+                    
+                    const angle = Math.random() * Math.PI * 2;
+                    const dist = 15 + Math.random() * 8;
+                    const x = playerModel.position.x + Math.cos(angle) * dist;
+                    const z = playerModel.position.z + Math.sin(angle) * dist;
+                    
+                    const newZombie = createZombie(x, z);
+                    if (newZombie) {
+                        zombies.push(newZombie);
+                        console.log("Zombie spawned, total:", zombies.length);
+                    }
+                    updateUI();
+                }, i * 800);
+            }
+        }
+
+        function gameOver() {
+            gameActive = false;
+            if (score > highScore) {
+                highScore = score;
+                localStorage.setItem('neonZombieHigh', highScore);
+                document.getElementById('highScoreVal').innerText = highScore;
+            }
+            document.getElementById('start-screen').style.display = 'flex';
+            controls.unlock();
+        }
+
+        // --- PointerLockControls ---
+        const controls = new PointerLockControls(camera, document.body);
+        scene.add(controls.getObject());
+
+        // --- start game ---
+        document.getElementById('startBtn').addEventListener('click', () => {
+            gameActive = true;
+            document.getElementById('start-screen').style.display = 'none';
+            controls.lock();
+            
+            // reset
+            playerModel.position.set(0, 0, 0);
+            controls.getObject().position.set(0, 1.8, 3);
+            
+            // Clear all zombies
+            zombies.forEach(z => scene.remove(z));
+            zombies.length = 0;
+            
+            hearts = 15; // Reset hearts
+            ammo = 30;
+            maxAmmo = 30;
+            score = 0;
+            multiplier = 1.0;
+            currentWave = 1;
+            updateUI();
+            
+            // Spawn first wave
+            setTimeout(() => {
+                if (gameActive) spawnWave();
+            }, 500);
+        });
+
+        // keyboard controls - ARROW KEYS
+        document.addEventListener('keydown', (e) => {
+            if (!gameActive) return;
+            
+            switch(e.code) {
+                case 'ArrowUp': moveState.forward = true; e.preventDefault(); break;
+                case 'ArrowDown': moveState.backward = true; e.preventDefault(); break;
+                case 'ArrowLeft': moveState.left = true; e.preventDefault(); break;
+                case 'ArrowRight': moveState.right = true; e.preventDefault(); break;
+                case 'KeyR': reload(); e.preventDefault(); break;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (!gameActive) return;
+            
+            switch(e.code) {
+                case 'ArrowUp': moveState.forward = false; e.preventDefault(); break;
+                case 'ArrowDown': moveState.backward = false; e.preventDefault(); break;
+                case 'ArrowLeft': moveState.left = false; e.preventDefault(); break;
+                case 'ArrowRight': moveState.right = false; e.preventDefault(); break;
+            }
+        });
+
+        // prevent arrow key scrolling
+        window.addEventListener('keydown', (e) => {
+            if (e.code.startsWith('Arrow')) {
+                e.preventDefault();
+            }
+        }, false);
+
+        // mouse click shooting
+        document.addEventListener('mousedown', (e) => {
+            if (!gameActive) return;
+            if (e.button === 0) shoot();
+        });
+
+        // Track damaged state for collision cooldown
+        const damagedZombies = new Set();
+
+        // --- game loop for movement and zombie AI ---
+        function gameLoop() {
+            if (gameActive) {
+                // Calculate movement direction relative to camera orientation
+                const cameraDir = new THREE.Vector3();
+                camera.getWorldDirection(cameraDir);
+                cameraDir.y = 0;
+                cameraDir.normalize();
+                
+                const cameraRight = new THREE.Vector3().crossVectors(new THREE.Vector3(0, 1, 0), cameraDir).normalize();
+                
+                direction.set(0, 0, 0);
+                
+                if (moveState.forward) direction.add(cameraDir);
+                if (moveState.backward) direction.sub(cameraDir);
+                if (moveState.left) direction.add(cameraRight);
+                if (moveState.right) direction.sub(cameraRight);
+                
+                if (direction.length() > 0) {
+                    direction.normalize();
+                    playerModel.position.x += direction.x * 0.15;
+                    playerModel.position.z += direction.z * 0.15;
+                    
+                    // boundaries
+                    playerModel.position.x = Math.max(-boundary, Math.min(boundary, playerModel.position.x));
+                    playerModel.position.z = Math.max(-boundary, Math.min(boundary, playerModel.position.z));
+                }
+                
+                // Update camera position to follow player
+                controls.getObject().position.copy(playerModel.position.clone().add(new THREE.Vector3(0, 1.8, 3)));
+                
+                // ZOMBIE AI
+                zombies.forEach((zombie, index) => {
+                    if (!zombie) return;
+                    
+                    // Calculate direction to player
+                    const dir = new THREE.Vector3().subVectors(playerModel.position, zombie.position).normalize();
+                    
+                    // Move towards player
+                    zombie.position.x += dir.x * zombie.userData.speed;
+                    zombie.position.z += dir.z * zombie.userData.speed;
+                    
+                    // face player
+                    zombie.lookAt(playerModel.position.x, zombie.position.y, playerModel.position.z);
+                    
+                    // Walking animation
+                    const time = Date.now() * 0.003 + zombie.userData.walkOffset;
+                    
+                    // Animate arms and legs
+                    if (zombie.children.length >= 6) {
+                        if (zombie.children[2]) {
+                            zombie.children[2].rotation.x = 0.3 + Math.sin(time) * 0.4;
+                        }
+                        if (zombie.children[3]) {
+                            zombie.children[3].rotation.x = -0.3 + Math.cos(time) * 0.4;
+                        }
+                        if (zombie.children[4]) {
+                            zombie.children[4].rotation.x = -0.2 + Math.sin(time) * 0.3;
+                        }
+                        if (zombie.children[5]) {
+                            zombie.children[5].rotation.x = 0.2 + Math.cos(time) * 0.3;
+                        }
+                    }
+                    
+                    // Damage player - only if zombie hasn't already taken a heart
+                    if (!zombie.userData.hasDamaged && zombie.position.distanceTo(playerModel.position) < 1.5) {
+                        hearts--;
+                        if (hearts < 0) hearts = 0;
+                        
+                        // Turn this zombie blue - it can't damage again
+                        turnZombieBlue(zombie);
+                        
+                        updateUI();
+                        
+                        if (hearts <= 0) {
+                            gameOver();
+                        }
+                    }
+                });
+                
+                // wave complete
+                if (zombies.length === 0 && gameActive) {
+                    currentWave++;
+                    multiplier = 1.0;
+                    maxAmmo += 5;
+                    ammo = maxAmmo;
+                    spawnWave();
+                    updateUI();
+                }
+                
+                updateUI();
+            }
+            
+            requestAnimationFrame(gameLoop);
+        }
+
+        // render loop
+        function animate() {
+            requestAnimationFrame(animate);
+            renderer.render(scene, camera);
+        }
+
+        // start loops
+        animate();
+        gameLoop();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+        });
+    </script>
+</body>
+</html>
